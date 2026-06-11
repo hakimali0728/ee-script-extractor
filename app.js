@@ -95,6 +95,36 @@ function parseModules(jsonText) {
   return { code, count: ordered.length, entry };
 }
 
+// Preferred path: ask our own Python backend to do the fetch (no CORS, no
+// proxy). Throws "no-backend" when served as a static site (no /api/extract),
+// so the caller can fall back to the proxy.
+async function extractViaBackend(target) {
+  let res;
+  try {
+    res = await fetch(`/api/extract?url=${encodeURIComponent(target)}`, {
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    throw new Error("no-backend");
+  }
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error("no-backend"); // static host returned HTML/404, not our API
+  }
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || `backend HTTP ${res.status}`);
+  return data; // { code, count, entry }
+}
+
+// Fallback path for static hosting: do the two-step fetch through a CORS proxy.
+async function extractViaProxy(target) {
+  const html = await fetchText(target);
+  const modulesUrl = findModulesUrl(html, target);
+  if (!modulesUrl) throw new Error("couldn't locate the app's modules.json");
+  const json = await fetchText(modulesUrl);
+  return parseModules(json);
+}
+
 async function extract() {
   const target = els.url.value.trim();
   if (!isValidUrl(target)) {
@@ -106,32 +136,29 @@ async function extract() {
   els.result.classList.add("hidden");
 
   try {
-    setStatus("Fetching app page…");
-    const html = await fetchText(target);
+    setStatus("Extracting…");
 
-    const modulesUrl = findModulesUrl(html, target);
-    if (!modulesUrl) {
-      setStatus("Couldn't locate the app's modules.json. Is this a published EE app /view/ URL?", "error");
-      return;
+    let result;
+    try {
+      result = await extractViaBackend(target);
+    } catch (err) {
+      if (err.message !== "no-backend") throw err; // a real backend error — surface it
+      result = await extractViaProxy(target); // static hosting: use the proxy
     }
 
-    setStatus("Fetching app source…");
-    const json = await fetchText(modulesUrl);
-
-    const { code, count, entry } = parseModules(json);
-    if (!code) {
+    if (!result.code) {
       setStatus("modules.json contained no source — the app may be empty or access-restricted.", "error");
       return;
     }
 
-    lastScript = code;
-    els.output.textContent = code;
-    els.meta.textContent = `${count} module(s)${entry ? ` · entry: ${entry}` : ""}`;
+    lastScript = result.code;
+    els.output.textContent = result.code;
+    els.meta.textContent = `${result.count} module(s)${result.entry ? ` · entry: ${result.entry}` : ""}`;
     els.result.classList.remove("hidden");
     setStatus("Source extracted ✅", "success");
   } catch (err) {
     setStatus(
-      `Failed: ${err.message}. The browser version needs a working Cloudflare Worker proxy — or skip the proxy entirely and use the CLI: node extract.js <app-url>`,
+      `Failed: ${err.message}. Easiest fix — run the local backend:  python server.py  then reload this page.`,
       "error"
     );
   } finally {

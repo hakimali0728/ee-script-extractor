@@ -78,11 +78,28 @@ below is only needed if you want a hosted, click-in-browser version.
 
 ---
 
-## ☁️ Web app: set up the proxy (required for the browser version only)
+## 🖥️ Web UI — Python backend (no proxy)
 
-Public CORS proxies are unreliable and are often blocked on corporate networks,
-so deploy your own free Cloudflare Worker. It's restricted to `*.earthengine.app`
-targets, so it can't be abused as an open proxy.
+Want the click-in-browser experience **without** any proxy? Run the bundled
+Python backend. It serves the page **and** does the fetching for it
+(frontend → backend → Earth Engine → back), so there's no CORS and no proxy.
+Standard library only — nothing to `pip install`.
+
+```bash
+python server.py            # then open http://localhost:8000
+```
+
+On Windows you can just **double-click `start-web.bat`** — it launches the
+server and opens your browser. Paste an app URL, click **Extract**, done.
+
+---
+
+## ☁️ Static hosting (GitHub Pages): set up a proxy
+
+Only needed if you host the front-end **without** the Python backend (e.g. on
+GitHub Pages). Browsers block direct cross-site fetches, so deploy a small free
+Cloudflare Worker proxy. It's restricted to `*.earthengine.app`, so it can't be
+abused as an open proxy.
 
 ```bash
 cd proxy
@@ -96,30 +113,17 @@ or append `?proxy=<worker-url>` to the page URL.
 
 ---
 
-## 🖥️ Run it locally
-
-No dependencies — any static file server works.
-
-```bash
-git clone https://github.com/hakimali0728/ee-script-extractor.git
-cd ee-script-extractor
-
-python -m http.server 8000     # Python 3
-# or: npx serve .
-```
-
-Then open 👉 **http://localhost:8000** (you'll still need the Worker proxy for extraction).
-
----
-
 ## 🗂️ Project structure
 
 ```
 ee-script-extractor/
+├── server.py           # 🖥️ Python backend web app (no proxy)
 ├── extract.js          # ⚡ CLI extractor (no proxy needed)
+├── extract.bat         # double-click CLI launcher (Windows)
+├── start-web.bat       # double-click web-app launcher (Windows)
 ├── index.html          # web UI
 ├── styles.css          # styling
-├── app.js              # web app: two-step fetch + parse logic
+├── app.js              # web app: backend-first, proxy fallback
 ├── proxy/
 │   ├── worker.js       # Cloudflare Worker CORS proxy
 │   └── wrangler.toml   # Worker config
