@@ -131,7 +131,7 @@ async function extract() {
     setStatus("Source extracted ✅", "success");
   } catch (err) {
     setStatus(
-      `Failed: ${err.message}. Public proxies are unreliable — deploy the Cloudflare Worker and paste its URL in Proxy settings.`,
+      `Failed: ${err.message}. The browser version needs a working Cloudflare Worker proxy — or skip the proxy entirely and use the CLI: node extract.js <app-url>`,
       "error"
     );
   } finally {

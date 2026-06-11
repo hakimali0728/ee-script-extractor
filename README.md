@@ -70,6 +70,9 @@ node extract.js https://your-name.users.earthengine.app/view/your-app
 node extract.js https://your-name.users.earthengine.app/view/your-app my-script.js
 ```
 
+**Prefer no typing?** On Windows, just **double-click `extract.bat`** and paste
+the URL when prompted (or drag a URL onto it). Same result, zero command line.
+
 That's it — no Cloudflare, no proxy field, nothing to hang on. The web app
 below is only needed if you want a hosted, click-in-browser version.
 
