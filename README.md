@@ -4,11 +4,11 @@
 
 ### Extract the JavaScript source from any public Google Earth Engine app — paste a URL, get clean code.
 
-[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-GitHub_Pages-2ea043?style=for-the-badge)](https://YOUR_USERNAME.github.io/ee-script-extractor)
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-GitHub_Pages-2ea043?style=for-the-badge)](https://hakimali0728.github.io/ee-script-extractor)
 [![Made with Vanilla JS](https://img.shields.io/badge/Made_with-Vanilla_JS-f7df1e?style=for-the-badge&logo=javascript&logoColor=black)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-**🔗 Live site:** [`https://YOUR_USERNAME.github.io/ee-script-extractor`](https://YOUR_USERNAME.github.io/ee-script-extractor)
+**🔗 Live site:** [`https://hakimali0728.github.io/ee-script-extractor`](https://hakimali0728.github.io/ee-script-extractor)
 
 </div>
 
@@ -57,7 +57,7 @@ No dependencies required — any static file server works.
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/ee-script-extractor.git
+git clone https://github.com/hakimali0728/ee-script-extractor.git
 cd ee-script-extractor
 
 # Serve it (pick one)
