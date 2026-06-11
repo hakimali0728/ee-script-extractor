@@ -1,0 +1,7 @@
+# Root config so Cloudflare's git build (which runs `npx wrangler deploy` from
+# the repo root) deploys the CORS proxy worker — NOT the static frontend.
+# `name` matches the existing worker so the URL stays the same.
+name = "ee-script-extractor"
+main = "proxy/worker.js"
+compatibility_date = "2024-09-01"
+workers_dev = true

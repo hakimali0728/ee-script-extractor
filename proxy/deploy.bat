@@ -1,9 +1,7 @@
 @echo off
 REM One-click Cloudflare Worker deploy for EE Script Extractor.
-REM Double-click this file. It will:
-REM   1. Log you into Cloudflare (opens your browser the first time)
-REM   2. Deploy the worker and print its URL
-cd /d "%~dp0"
+REM Deploys from the repo ROOT (uses the root wrangler.toml -> proxy/worker.js).
+cd /d "%~dp0.."
 echo ============================================
 echo   Deploying EE Script Extractor proxy
 echo ============================================
