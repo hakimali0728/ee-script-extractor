@@ -9,12 +9,6 @@
 //   1. Fetch the app's /view/ HTML, read the init("…-modules.json") pointer.
 //   2. Fetch that modules.json — its `dependencies` map holds the JS source.
 
-// Flaky public fallbacks, used only when no Worker proxy is configured.
-const PUBLIC_PROXIES = [
-  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-];
-
 // Optional hard-coded Worker proxy. Leave "" and set it via the UI field
 // (saved in the browser) or by appending ?proxy=<workerUrl> to the page URL.
 const DEFAULT_WORKER_PROXY = "";
@@ -51,31 +45,20 @@ function getWorkerProxy() {
   return (els.proxy && els.proxy.value.trim()) || localStorage.getItem("ee_proxy") || DEFAULT_WORKER_PROXY;
 }
 
-// Build the ordered list of URLs to try: Worker proxy first (if set), then
-// the public fallbacks.
-function proxiedCandidates(target) {
-  const out = [];
-  const worker = getWorkerProxy();
-  if (worker) out.push(`${worker.replace(/\/+$/, "")}/?url=${encodeURIComponent(target)}`);
-  for (const build of PUBLIC_PROXIES) out.push(build(target));
-  return out;
-}
-
 async function fetchText(target) {
-  let lastError;
-  for (const candidate of proxiedCandidates(target)) {
-    try {
-      const res = await fetch(candidate, { redirect: "follow" });
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.trim().length > 0) return text;
-      }
-      lastError = new Error(`HTTP ${res.status}`);
-    } catch (err) {
-      lastError = err;
-    }
+  const worker = getWorkerProxy();
+  if (!worker) {
+    throw new Error(
+      "No proxy configured. Set your Cloudflare Worker URL in ⚙️ Proxy settings, " +
+        "or run the no-proxy CLI: node extract.js <app-url>"
+    );
   }
-  throw lastError || new Error("all proxies failed");
+  const candidate = `${worker.replace(/\/+$/, "")}/?url=${encodeURIComponent(target)}`;
+  const res = await fetch(candidate, { redirect: "follow" });
+  if (!res.ok) throw new Error(`HTTP ${res.status} from proxy`);
+  const text = await res.text();
+  if (!text || !text.trim()) throw new Error("empty response from proxy");
+  return text;
 }
 
 // Find the modules.json URL the app loads. Prefer the explicit init(...)

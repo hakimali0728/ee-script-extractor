@@ -57,7 +57,25 @@ proxy — your own **Cloudflare Worker** (recommended) or flaky public fallbacks
 
 ---
 
-## ☁️ Set up the proxy (required)
+## ⚡ Quick start — CLI (no proxy, recommended)
+
+The fastest way, with **zero setup and no proxy**. CORS only restricts browsers,
+so from Node we fetch the app directly:
+
+```bash
+node extract.js https://your-name.users.earthengine.app/view/your-app
+# → saves ee-app-source.js  (runs in ~1–2 seconds)
+
+# optional: choose the output file name
+node extract.js https://your-name.users.earthengine.app/view/your-app my-script.js
+```
+
+That's it — no Cloudflare, no proxy field, nothing to hang on. The web app
+below is only needed if you want a hosted, click-in-browser version.
+
+---
+
+## ☁️ Web app: set up the proxy (required for the browser version only)
 
 Public CORS proxies are unreliable and are often blocked on corporate networks,
 so deploy your own free Cloudflare Worker. It's restricted to `*.earthengine.app`
@@ -95,9 +113,10 @@ Then open 👉 **http://localhost:8000** (you'll still need the Worker proxy for
 
 ```
 ee-script-extractor/
-├── index.html          # UI
+├── extract.js          # ⚡ CLI extractor (no proxy needed)
+├── index.html          # web UI
 ├── styles.css          # styling
-├── app.js              # two-step fetch + parse logic
+├── app.js              # web app: two-step fetch + parse logic
 ├── proxy/
 │   ├── worker.js       # Cloudflare Worker CORS proxy
 │   └── wrangler.toml   # Worker config

@@ -43,7 +43,7 @@
           autocomplete="off"
           spellcheck="false"
         />
-        <p class="hint">Saved in your browser. Leave empty to use public proxies (unreliable, often blocked on corporate networks).</p>
+        <p class="hint">Required for the web app (browsers block direct cross-site fetches). Saved in your browser. No proxy? Use the CLI instead: <code>node extract.js &lt;app-url&gt;</code></p>
       </details>
     </section>
 
@@ -60,7 +60,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>Static client-side tool · best-effort extraction via public CORS proxy</p>
+    <p>Static client-side tool · needs a Cloudflare Worker proxy · or use the no-proxy CLI</p>
   </footer>
 
   <script src="app.js"></script>

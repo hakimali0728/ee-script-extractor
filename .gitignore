@@ -14,5 +14,7 @@ Thumbs.db
 # Local server artifacts
 *.pid
 
-# Local test fixture (third-party app source — do not republish)
+# Local test fixture + CLI output (third-party app source — do not republish)
 sample-modules.json
+ee-app-source.js
+extracted-*.js
