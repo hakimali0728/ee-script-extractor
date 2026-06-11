@@ -13,7 +13,7 @@
       <span class="logo">🌍</span>
       <div>
         <h1>EE Script Extractor</h1>
-        <p class="tagline">Extract the JavaScript source from any public Google Earth Engine app.</p>
+        <p class="tagline">Extract the published JavaScript source from a public Google Earth Engine app.</p>
       </div>
     </div>
   </header>
@@ -32,6 +32,19 @@
         <button id="extract" class="btn primary">Extract</button>
       </div>
       <p id="status" class="status" role="status" aria-live="polite"></p>
+
+      <details class="settings">
+        <summary>⚙️ Proxy settings</summary>
+        <label for="proxy" class="field-label">Cloudflare Worker proxy URL (recommended)</label>
+        <input
+          id="proxy"
+          type="url"
+          placeholder="https://ee-script-extractor-proxy.your-name.workers.dev"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <p class="hint">Saved in your browser. Leave empty to use public proxies (unreliable, often blocked on corporate networks).</p>
+      </details>
     </section>
 
     <section id="result" class="panel result hidden">

@@ -1,18 +1,27 @@
-// EE Script Extractor — client-side, dependency-free.
+// EE Script Extractor — extracts the author-published source of a public
+// Google Earth Engine app.
 //
-// Browsers block cross-origin fetches (CORS), so direct requests to
-// google.earthengine.app fail. We route through public CORS proxies and try
-// each one until a response comes back. This is best-effort: a proxy may be
-// rate-limited or down. For production reliability, host your own proxy.
+// How it works (two steps). The /view/ page is just a UI shell; the real
+// source lives in a "<app>-modules.json" file that the page loads. Both the
+// page and the JSON are served from *.earthengine.app, which sends no CORS
+// headers — so the browser can't fetch them directly. We route through a
+// proxy (your Cloudflare Worker, recommended; or flaky public fallbacks):
+//   1. Fetch the app's /view/ HTML, read the init("…-modules.json") pointer.
+//   2. Fetch that modules.json — its `dependencies` map holds the JS source.
 
-const PROXIES = [
+// Flaky public fallbacks, used only when no Worker proxy is configured.
+const PUBLIC_PROXIES = [
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  (url) => `https://thingproxy.freeboard.io/fetch/${url}`,
 ];
+
+// Optional hard-coded Worker proxy. Leave "" and set it via the UI field
+// (saved in the browser) or by appending ?proxy=<workerUrl> to the page URL.
+const DEFAULT_WORKER_PROXY = "";
 
 const els = {
   url: document.getElementById("url"),
+  proxy: document.getElementById("proxy"),
   extract: document.getElementById("extract"),
   status: document.getElementById("status"),
   result: document.getElementById("result"),
@@ -38,11 +47,25 @@ function isValidUrl(value) {
   }
 }
 
-async function fetchViaProxies(target) {
+function getWorkerProxy() {
+  return (els.proxy && els.proxy.value.trim()) || localStorage.getItem("ee_proxy") || DEFAULT_WORKER_PROXY;
+}
+
+// Build the ordered list of URLs to try: Worker proxy first (if set), then
+// the public fallbacks.
+function proxiedCandidates(target) {
+  const out = [];
+  const worker = getWorkerProxy();
+  if (worker) out.push(`${worker.replace(/\/+$/, "")}/?url=${encodeURIComponent(target)}`);
+  for (const build of PUBLIC_PROXIES) out.push(build(target));
+  return out;
+}
+
+async function fetchText(target) {
   let lastError;
-  for (const build of PROXIES) {
+  for (const candidate of proxiedCandidates(target)) {
     try {
-      const res = await fetch(build(target), { redirect: "follow" });
+      const res = await fetch(candidate, { redirect: "follow" });
       if (res.ok) {
         const text = await res.text();
         if (text && text.trim().length > 0) return text;
@@ -52,51 +75,41 @@ async function fetchViaProxies(target) {
       lastError = err;
     }
   }
-  throw lastError || new Error("All proxies failed");
+  throw lastError || new Error("all proxies failed");
 }
 
-// Pull every bit of JavaScript we can find out of the fetched page:
-// inline <script> bodies, referenced .js URLs, and any raw Earth Engine
-// code patterns embedded in the markup.
-function extractJavaScript(html, baseUrl) {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const parts = [];
+// Find the modules.json URL the app loads. Prefer the explicit init(...)
+// pointer in the HTML; fall back to deriving it from the /view/<app> path.
+function findModulesUrl(html, appUrl) {
+  const match = html.match(/init\(\s*["']([^"']+?modules\.json)["']/i);
+  if (match) return match[1].replace(/\\\//g, "/"); // unescape \/ from the HTML
 
-  const inline = [];
-  const external = [];
-
-  doc.querySelectorAll("script").forEach((s) => {
-    const src = s.getAttribute("src");
-    if (src) {
-      try {
-        external.push(new URL(src, baseUrl).href);
-      } catch {
-        external.push(src);
-      }
-    } else if (s.textContent && s.textContent.trim()) {
-      inline.push(s.textContent.trim());
-    }
-  });
-
-  if (inline.length) {
-    parts.push("// ===== Inline scripts =====");
-    parts.push(inline.join("\n\n"));
+  try {
+    const u = new URL(appUrl);
+    const seg = u.pathname.split("/").filter(Boolean).pop();
+    if (seg) return `${u.origin}/javascript/${seg.toLowerCase()}-modules.json`;
+  } catch {
+    /* ignore */
   }
+  return null;
+}
 
-  // Earth Engine code signatures, in case the source is embedded as a string.
-  const eePattern = /(ee\.[A-Za-z]+\([^\n<]*|Map\.[A-Za-z]+\([^\n<]*)/g;
-  const eeHits = html.match(eePattern);
-  if (eeHits && eeHits.length) {
-    parts.push("\n// ===== Detected Earth Engine code patterns =====");
-    parts.push([...new Set(eeHits)].join("\n"));
-  }
+// Turn the modules.json into readable, concatenated source. `dependencies`
+// maps "user/repo:Script Name" -> source; `path` names the entry module.
+function parseModules(jsonText) {
+  const data = JSON.parse(jsonText);
+  const deps = data.dependencies || {};
+  const names = Object.keys(deps);
+  if (!names.length) return { code: "", count: 0, entry: null };
 
-  if (external.length) {
-    parts.push("\n// ===== Referenced external scripts =====");
-    parts.push(external.map((u) => `// ${u}`).join("\n"));
-  }
+  const entry = data.path && deps[data.path] ? data.path : null;
+  const ordered = entry ? [entry, ...names.filter((n) => n !== entry)] : names;
 
-  return { code: parts.join("\n").trim(), inlineCount: inline.length, externalCount: external.length };
+  const code = ordered
+    .map((n) => `// ===== Module: ${n} =====\n\n${String(deps[n]).trim()}`)
+    .join("\n\n\n");
+
+  return { code, count: ordered.length, entry };
 }
 
 async function extract() {
@@ -108,26 +121,36 @@ async function extract() {
 
   els.extract.disabled = true;
   els.result.classList.add("hidden");
-  setStatus("Fetching page…");
 
   try {
-    const html = await fetchViaProxies(target);
-    setStatus("Extracting JavaScript…");
+    setStatus("Fetching app page…");
+    const html = await fetchText(target);
 
-    const { code, inlineCount, externalCount } = extractJavaScript(html, target);
+    const modulesUrl = findModulesUrl(html, target);
+    if (!modulesUrl) {
+      setStatus("Couldn't locate the app's modules.json. Is this a published EE app /view/ URL?", "error");
+      return;
+    }
 
+    setStatus("Fetching app source…");
+    const json = await fetchText(modulesUrl);
+
+    const { code, count, entry } = parseModules(json);
     if (!code) {
-      setStatus("No JavaScript found in the page. The app may load its source dynamically.", "error");
+      setStatus("modules.json contained no source — the app may be empty or access-restricted.", "error");
       return;
     }
 
     lastScript = code;
     els.output.textContent = code;
-    els.meta.textContent = `${inlineCount} inline script(s), ${externalCount} external reference(s)`;
+    els.meta.textContent = `${count} module(s)${entry ? ` · entry: ${entry}` : ""}`;
     els.result.classList.remove("hidden");
-    setStatus("Done ✅", "success");
+    setStatus("Source extracted ✅", "success");
   } catch (err) {
-    setStatus(`Failed to fetch: ${err.message}. The proxy may be down or the URL blocked.`, "error");
+    setStatus(
+      `Failed: ${err.message}. Public proxies are unreliable — deploy the Cloudflare Worker and paste its URL in Proxy settings.`,
+      "error"
+    );
   } finally {
     els.extract.disabled = false;
   }
@@ -149,16 +172,31 @@ function downloadScript() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "ee-script.js";
+  a.download = "ee-app-source.js";
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
 
-els.extract.addEventListener("click", extract);
-els.url.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") extract();
-});
-els.copy.addEventListener("click", copyScript);
-els.download.addEventListener("click", downloadScript);
+// --- init ---
+(function init() {
+  // Seed the proxy field from ?proxy= or saved value, and keep it persisted.
+  const fromQuery = new URLSearchParams(location.search).get("proxy");
+  if (fromQuery) localStorage.setItem("ee_proxy", fromQuery);
+  if (els.proxy) {
+    els.proxy.value = localStorage.getItem("ee_proxy") || DEFAULT_WORKER_PROXY || "";
+    els.proxy.addEventListener("input", () => {
+      const v = els.proxy.value.trim();
+      if (v) localStorage.setItem("ee_proxy", v);
+      else localStorage.removeItem("ee_proxy");
+    });
+  }
+
+  els.extract.addEventListener("click", extract);
+  els.url.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") extract();
+  });
+  els.copy.addEventListener("click", copyScript);
+  els.download.addEventListener("click", downloadScript);
+})();
