@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EE Script Extractor — Extract JavaScript from Google Earth Engine apps</title>
+  <meta name="description" content="Paste a public Google Earth Engine app URL and get the clean JavaScript source." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <span class="logo">🌍</span>
+      <div>
+        <h1>EE Script Extractor</h1>
+        <p class="tagline">Extract the JavaScript source from any public Google Earth Engine app.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <label for="url" class="field-label">Earth Engine app URL</label>
+      <div class="input-row">
+        <input
+          id="url"
+          type="url"
+          placeholder="https://google.earthengine.app/view/your-app"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="extract" class="btn primary">Extract</button>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="result" class="panel result hidden">
+      <div class="result-toolbar">
+        <span id="meta" class="meta"></span>
+        <div class="actions">
+          <button id="copy" class="btn">📋 Copy script</button>
+          <button id="download" class="btn">⬇️ Download .js</button>
+        </div>
+      </div>
+      <pre class="code-box"><code id="output"></code></pre>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Static client-side tool · best-effort extraction via public CORS proxy</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
