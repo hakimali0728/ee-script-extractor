@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hakimali0728.github.io/ee-script-extractor/sitemap.xml

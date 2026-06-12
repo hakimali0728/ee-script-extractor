@@ -124,9 +124,12 @@ ee-script-extractor/
 ├── index.html          # web UI
 ├── styles.css          # styling
 ├── app.js              # web app: backend-first, proxy fallback
+├── wrangler.toml       # Cloudflare Worker config (deployed from repo root)
 ├── proxy/
 │   ├── worker.js       # Cloudflare Worker CORS proxy
-│   └── wrangler.toml   # Worker config
+│   └── deploy.bat      # one-click Worker deploy (Windows)
+├── sitemap.xml
+├── robots.txt
 └── README.md
 ```
 
@@ -137,6 +140,30 @@ ee-script-extractor/
 - 🔓 Works only for **public, published** apps — private or unpublished apps return no source.
 - 🧩 The extracted code is the **author's published source**; respect its license and the EE Terms of Service.
 - 🌐 Front-end code is always visible in the browser — this is a static client-side tool by design.
+
+---
+
+## ❓ FAQ
+
+**How do I extract the source code from a Google Earth Engine app?**
+Copy the public app URL (e.g. `https://your-name.users.earthengine.app/view/your-app`),
+paste it into EE Script Extractor, and click **Extract**. You get the published
+JavaScript source instantly — copy or download it.
+
+**Can I get the JavaScript behind an Earth Engine Apps `/view/` URL?**
+Yes, for **public** apps. The page loads a `…-modules.json` bundle that contains
+the author's script; this tool fetches and beautifies it for you.
+
+**Does it work for any public GEE app?**
+Any published, public Earth Engine app. Private or unpublished apps don't expose
+their source, so they can't be extracted.
+
+**Is it free? Do I need to log in?**
+Completely free and no login. Use the hosted web app, the Python backend, or the
+Node/CLI script.
+
+**Keywords:** extract Google Earth Engine code, get GEE app source code, Earth
+Engine Apps JavaScript extractor, view earthengine.app script, download GEE app code.
 
 ---
 
