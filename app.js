@@ -9,9 +9,9 @@
 //   1. Fetch the app's /view/ HTML, read the init("…-modules.json") pointer.
 //   2. Fetch that modules.json — its `dependencies` map holds the JS source.
 
-// Optional hard-coded Worker proxy. Leave "" and set it via the UI field
-// (saved in the browser) or by appending ?proxy=<workerUrl> to the page URL.
-const DEFAULT_WORKER_PROXY = "";
+// Default Worker proxy used by the hosted (static) site. Can still be
+// overridden by appending ?proxy=<workerUrl> to the page URL.
+const DEFAULT_WORKER_PROXY = "https://ee-script-extractor.hakimali.workers.dev";
 
 const els = {
   url: document.getElementById("url"),

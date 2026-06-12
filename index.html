@@ -33,19 +33,6 @@
         <button id="extract" class="btn primary">Extract</button>
       </div>
       <p id="status" class="status" role="status" aria-live="polite"></p>
-
-      <details class="settings">
-        <summary>⚙️ Proxy settings</summary>
-        <label for="proxy" class="field-label">Cloudflare Worker proxy URL (recommended)</label>
-        <input
-          id="proxy"
-          type="url"
-          placeholder="https://ee-script-extractor-proxy.your-name.workers.dev"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <p class="hint">Only needed when hosting this as a static site (e.g. GitHub Pages). If you run <code>python server.py</code>, the backend handles fetching and this can stay empty.</p>
-      </details>
     </section>
 
     <section id="result" class="panel result hidden">
@@ -64,6 +51,6 @@
     <p>Run with <code>python server.py</code> for proxy-free extraction · or host static with a Cloudflare Worker</p>
   </footer>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
